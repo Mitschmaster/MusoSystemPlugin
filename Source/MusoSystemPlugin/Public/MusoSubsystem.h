@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/EngineSubsystem.h"
+#include "Quartz/AudioMixerClockHandle.h"
 #include "MusoPlayer.h"
 
 #include "MusoSubsystem.generated.h"
@@ -17,7 +18,9 @@ class MUSOSYSTEMPLUGIN_API UMusoSubsystem : public UWorldSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-
+	virtual void PostInitialize() override;
+	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+	
 	UPROPERTY(BlueprintReadOnly, Category = "Muso Subsystem")
 	TArray<UMusoPlayer*> MusoPlayers;
 
@@ -50,6 +53,11 @@ public:
 
 	void OnNextMusoPlayerEvent(const FMusoMidiEvent& MusoMidiEvent) const;
 
+	UQuartzClockHandle* GetQuartzClockHandle() const;
+
 private:
 	void RemovePlayer(UMusoPlayer* Player);
+
+	UPROPERTY()
+	UQuartzClockHandle* QuartzClockHandle;
 };

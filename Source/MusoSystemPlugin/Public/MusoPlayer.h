@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Quartz/AudioMixerClockHandle.h"
 
 #include "MidiPlayer.h"
 #include "AudioPlayer.h"
@@ -44,7 +45,7 @@ private:
 public:
 	FOnNextMusoMidiEventFromMusoPlayer OnNextMusoMidiEventFromMusoPlayer;
 	FOnPlayerFadedOut OnPlayerFadedOut;
-
+	
 	void OnNextMidiEventFromMidiPlayer(const FMusoMidiEvent& MusoMidiEvent) const;
 	
 	void Play();
@@ -75,5 +76,5 @@ private:
 	float CurrentVolume = 1.0f;
 	float TargetVolume = 1.0f;
 	
-	FTimerHandle AudioLoopTimer;
+	//FTimerHandle AudioLoopTimer;
 };

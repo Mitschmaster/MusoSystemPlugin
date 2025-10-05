@@ -1,4 +1,5 @@
 #include "MidiPlayer.h"
+#include "MusoSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -35,6 +36,36 @@ void UMidiPlayer::Initialize(UMusoData* const MusoData)
 		UE_LOG(LogTemp, Error, TEXT("Midi Player: No Midi Events found on Track!"));
 		return;
 	}
+	bQueueStart = false;
+	
+	UMusoSubsystem* musoSubsystem = UWorld::GetSubsystem<UMusoSubsystem>(GetWorld());
+	UQuartzClockHandle* clockHandle = musoSubsystem->GetQuartzClockHandle();
+	
+	FQuartzQuantizationBoundary quartzQuantizationBoundry;
+	quartzQuantizationBoundry.Quantization = EQuartzCommandQuantization::Beat;
+	quartzQuantizationBoundry.CountingReferencePoint = EQuarztQuantizationReference::BarRelative;
+	quartzQuantizationBoundry.Multiplier = 1.0f;
+	quartzQuantizationBoundry.bFireOnClockStart = false;
+
+	//OnQuartzCommandEvent.BindDynamic(this, &UMidiPlayer::OnQuartzCommandEventFunction);
+
+	
+	// clockHandle->NotifyOnQuantizationBoundary(
+	// 	this,
+	// 	quartzQuantizationBoundry,
+	// 	OnQuartzCommandEvent		
+	// 	);
+
+	FOnQuartzMetronomeEventBP OnQuartzMetronomeEvent;
+	OnQuartzMetronomeEvent.BindDynamic(this, &UMidiPlayer::OnQuartzMetronomeEventFunction);
+	
+	clockHandle->SubscribeToQuantizationEvent(
+		this,
+		EQuartzCommandQuantization::Bar,
+		OnQuartzMetronomeEvent,
+		clockHandle);
+	
+
 }
 
 float UMidiPlayer::GetMsecToNextNoteOnEvent() const
@@ -49,8 +80,8 @@ float UMidiPlayer::GetMsecSincePreviousNoteOnEvent() const
 
 void UMidiPlayer::PlayerLoopFunction()
 {
-	if (NextMidiTick == 0)
-		OnPlayerStart.ExecuteIfBound();
+	//if (NextMidiTick == 0)
+	//	OnPlayerStart.ExecuteIfBound();
 
 	FMidiEventListWithExtra eventList = GetEventsAtTick(NextMidiTick);
 	
@@ -81,6 +112,23 @@ void UMidiPlayer::PlayerLoopFunction()
 		msecToNextEvent / 1000.f,
 		false
 	);
+}
+
+void UMidiPlayer::OnQuartzCommandEventFunction(EQuartzCommandDelegateSubType EventType, FName Name)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Quartz Command Event: %i"), EventType);
+	if (bQueueStart)
+		Play();
+	bQueueStart = false;
+}
+
+void UMidiPlayer::OnQuartzMetronomeEventFunction(FName ClockName, EQuartzCommandQuantization QuantizationType,
+	int32 NumBars, int32 Beat, float BeatFraction)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Quartz Command Event Bars: %i"), NumBars);
+	if (bQueueStart)
+		Play();
+	bQueueStart = false;
 }
 
 void UMidiPlayer::BroadcastEvent(const FMidiEventList& Events) const
@@ -133,6 +181,11 @@ void UMidiPlayer::UnPause()
 {
 	if (GetWorld()->GetTimerManager().IsTimerPaused(PlayerTimerHandle))
 		GetWorld()->GetTimerManager().UnPauseTimer(PlayerTimerHandle);
+}
+
+void UMidiPlayer::QueueStart()
+{
+	bQueueStart = true;
 }
 
 FMidiEventListWithExtra UMidiPlayer::GetEventsAtTick(int32 Tick) const

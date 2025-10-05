@@ -1,7 +1,10 @@
 #include "AudioPlayer.h"
-
+#include "MusoSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
+#include "Quartz/AudioMixerClockHandle.h"
+#include "Sound/QuartzQuantizationUtilities.h"
+
 
 void UAudioPlayer::Initialize(UMusoData* MusoData)
 {
@@ -21,6 +24,7 @@ void UAudioPlayer::Initialize(UMusoData* MusoData)
 		if (component)
 		{
 			component->bIsUISound = false;
+			component->bAutoActivate = false;
 			FComponentToLoopMap componentToLoopMap;
 			componentToLoopMap.MusoAudioParam = audioParam;
 			componentToLoopMap.AudioComponent = component;
@@ -32,11 +36,30 @@ void UAudioPlayer::Initialize(UMusoData* MusoData)
 
 void UAudioPlayer::Play()
 {
+	UMusoSubsystem* musoSubsystem = UWorld::GetSubsystem<UMusoSubsystem>(GetWorld());
+	UQuartzClockHandle* clockHandle = musoSubsystem->GetQuartzClockHandle();
+
+	FQuartzQuantizationBoundary quartzQuantizationBoundry;
+	quartzQuantizationBoundry.Quantization = EQuartzCommandQuantization::Bar;
+	quartzQuantizationBoundry.CountingReferencePoint = EQuarztQuantizationReference::TransportRelative;
+	quartzQuantizationBoundry.Multiplier = 1.0f;
+	quartzQuantizationBoundry.bFireOnClockStart = false;
+
+
+	UE_LOG(LogTemp, Warning, TEXT("Clock is running: %f"), clockHandle->GetBeatProgressPercent());
+	
 	for (const FComponentToLoopMap& componentToLoopMap : ComponentToLoopMapList)
 	{
+		UE_LOG(LogTemp, Error, TEXT("World: %p"), GetWorld());
+
 		if (componentToLoopMap.AudioComponent)
 		{
-			componentToLoopMap.AudioComponent->Play();
+			componentToLoopMap.AudioComponent->PlayQuantized(
+				GetWorld(),
+				clockHandle,
+				quartzQuantizationBoundry,
+				FOnQuartzCommandEventBP()
+				);
 		}
 	}
 }

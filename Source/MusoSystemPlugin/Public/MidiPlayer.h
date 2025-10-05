@@ -44,6 +44,7 @@ public:
 	void Stop();
 	void Pause();
 	void UnPause();
+	void QueueStart();
 
 	float GetMsecToNextNoteOnEvent() const;
 	float GetMsecSincePreviousNoteOnEvent() const;
@@ -70,7 +71,15 @@ private:
 	
 	FTimerHandle PlayerTimerHandle;
 
+	FOnQuartzCommandEventBP OnQuartzCommandEvent;
+	bool bQueueStart = false;
+	
 	void PlayerLoopFunction();
+
+	UFUNCTION()
+	void OnQuartzCommandEventFunction(EQuartzCommandDelegateSubType EventType, FName Name);
+	UFUNCTION()
+	void OnQuartzMetronomeEventFunction(FName ClockName, EQuartzCommandQuantization QuantizationType, int32 NumBars, int32 Beat, float BeatFraction);
 
 	void BroadcastEvent(const FMidiEventList& Events) const;
 	FMidiEventListWithExtra GetEventsAtTick(int32 Tick) const;

@@ -32,34 +32,34 @@ void UMusoPlayer::Play()
 {
 	if (PlayerState == EPlayerState::Playing)
 	{
-		MidiPlayer->Stop();
-		MidiPlayer->Play();
-		AudioPlayer->Play();
-		GetWorld()->GetTimerManager().SetTimer(
+		// MidiPlayer->Stop();
+		// MidiPlayer->Play();
+		// AudioPlayer->Play();
+		/*GetWorld()->GetTimerManager().SetTimer(
 			AudioLoopTimer,
 			this,
 			&UMusoPlayer::Play,
 			MusoData->MusoPlayerLoopLength,
 			false
-		);
+		);*/
 	}
 	if (PlayerState == EPlayerState::Paused)
 	{
 		MidiPlayer->UnPause();
 		AudioPlayer->UnPause();
-		GetWorld()->GetTimerManager().UnPauseTimer(AudioLoopTimer);
+		//GetWorld()->GetTimerManager().UnPauseTimer(AudioLoopTimer);
 	}
 	if (PlayerState == EPlayerState::Stopped)
 	{
-		MidiPlayer->Play();
+		MidiPlayer->QueueStart();
 		AudioPlayer->Play();
-		GetWorld()->GetTimerManager().SetTimer(
+		/*GetWorld()->GetTimerManager().SetTimer(
 			AudioLoopTimer,
 			this,
 			&UMusoPlayer::Play,
 			MusoData->MusoPlayerLoopLength,
 			false
-		);
+		);*/
 	}
 	
 	CancelDestruction();
@@ -71,7 +71,7 @@ void UMusoPlayer::Stop()
 	MidiPlayer->Stop();
 	AudioPlayer->Stop();
 	CancelDestruction();
-	GetWorld()->GetTimerManager().ClearTimer(AudioLoopTimer);
+	//GetWorld()->GetTimerManager().ClearTimer(AudioLoopTimer);
 	PlayerState = EPlayerState::Stopped;
 }
 
@@ -80,7 +80,7 @@ void UMusoPlayer::Pause()
 	MidiPlayer->Pause();
 	AudioPlayer->Pause();
 	CancelDestruction();
-	GetWorld()->GetTimerManager().PauseTimer(AudioLoopTimer);
+	//GetWorld()->GetTimerManager().PauseTimer(AudioLoopTimer);
 	PlayerState = EPlayerState::Paused;
 }
 
