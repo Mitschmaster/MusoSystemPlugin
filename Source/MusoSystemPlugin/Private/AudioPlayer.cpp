@@ -3,29 +3,30 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 
-void UAudioPlayer::AddMusoAudioLoop(FMusoAudioParam AudioParam)
+void UAudioPlayer::Initialize(UMusoData* MusoData)
 {
-	if (!AudioParam.SoundWave)
-		return;
-
-	UAudioComponent* component = UGameplayStatics::CreateSound2D(
-		this,
-		AudioParam.SoundWave,
-		AudioParam.Volume,
-		AudioParam.Pitch,
-		0.f,
-		nullptr,
-		false,
-		true
-	);
-
-	if (component)
+	for (const FMusoAudioParam& audioParam : MusoData->AudioTracks)
 	{
-		FComponentToLoopMap componentToLoopMap;
-		componentToLoopMap.MusoAudioParam = AudioParam;
-		componentToLoopMap.AudioComponent = component;
+		UAudioComponent* component = UGameplayStatics::CreateSound2D(
+			this,
+			audioParam.SoundWave,
+			audioParam.Volume,
+			audioParam.Pitch,
+			0.f,
+			nullptr,
+			false,
+			false
+		);
 
-		ComponentToLoopMapList.Add(componentToLoopMap);
+		if (component)
+		{
+			component->bIsUISound = false;
+			FComponentToLoopMap componentToLoopMap;
+			componentToLoopMap.MusoAudioParam = audioParam;
+			componentToLoopMap.AudioComponent = component;
+
+			ComponentToLoopMapList.Add(componentToLoopMap);
+		}
 	}
 }
 
@@ -36,6 +37,72 @@ void UAudioPlayer::Play()
 		if (componentToLoopMap.AudioComponent)
 		{
 			componentToLoopMap.AudioComponent->Play();
+		}
+	}
+}
+
+void UAudioPlayer::Stop()
+{
+	for (const FComponentToLoopMap& componentToLoopMap : ComponentToLoopMapList)
+	{
+		if (componentToLoopMap.AudioComponent)
+		{
+			componentToLoopMap.AudioComponent->Stop();
+		}
+	}
+}
+
+void UAudioPlayer::Pause()
+{
+	for (const FComponentToLoopMap& componentToLoopMap : ComponentToLoopMapList)
+	{
+		if (componentToLoopMap.AudioComponent)
+		{
+			componentToLoopMap.AudioComponent->SetPaused(true);
+		}
+	}
+}
+
+void UAudioPlayer::UnPause()
+{
+	for (const FComponentToLoopMap& componentToLoopMap : ComponentToLoopMapList)
+	{
+		if (componentToLoopMap.AudioComponent)
+		{
+			componentToLoopMap.AudioComponent->SetPaused(false);
+		}
+	}
+}
+
+void UAudioPlayer::FadeIn(float Length)
+{
+	for (const FComponentToLoopMap& componentToLoopMap : ComponentToLoopMapList)
+	{
+		if (componentToLoopMap.AudioComponent)
+		{
+			componentToLoopMap.AudioComponent->FadeIn(Length);
+		}
+	}
+}
+
+void UAudioPlayer::FadeOut(float Length)
+{
+	for (const FComponentToLoopMap& componentToLoopMap : ComponentToLoopMapList)
+	{
+		if (componentToLoopMap.AudioComponent)
+		{
+			componentToLoopMap.AudioComponent->FadeOut(Length, 0.0f);
+		}
+	}
+}
+
+void UAudioPlayer::SetVolume(float Volume)
+{
+	for (const FComponentToLoopMap& componentToLoopMap : ComponentToLoopMapList)
+	{
+		if (componentToLoopMap.AudioComponent)
+		{
+			componentToLoopMap.AudioComponent->SetVolumeMultiplier(Volume);
 		}
 	}
 }

@@ -2,78 +2,58 @@
 
 #include "CoreMinimal.h"
 #include "HarmonixMidi/MidiFile.h"
+#include "Sound/SoundWave.h"
+#include "PlayerBase.h"
+#include "MusoData.h"
 
 #include "MidiPlayer.generated.h"
 
 
-UENUM(BlueprintType)
-enum class EPlayerState : uint8
-{
-	Stopped,
-	Paused,
-	Playing
-};
-
 USTRUCT(BlueprintType)
-struct FMusoMidiEvent
+struct MUSOSYSTEMPLUGIN_API FMusoMidiEvent
 {
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
 	TArray<uint8> Notes;
 	UPROPERTY(BlueprintReadOnly)
-	int32 MsecSincePreviousNoteOnEvent;
+	int32 MsecSincePreviousNoteOnEvent = 0;
 	UPROPERTY(BlueprintReadOnly)
-	int32 MsecToNextNoteOnEvent;
+	int32 MsecToNextNoteOnEvent = 0;
 };
 
 struct FMidiEventListWithExtra
 {
 	FMidiEventList Events;
 	int32 Tick;
-	int32 Count;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNextMidiEvent, FMusoMidiEvent, MusoMidiEvent);
+DECLARE_DELEGATE_OneParam(FOnNextMidiEventFromMidiPlayer, const FMusoMidiEvent&);
+DECLARE_DELEGATE(FOnPlayerStart);
 
 UCLASS(Blueprintable)
-class MUSOSYSTEMPLUGIN_API UMidiPlayer : public UObject
+class MUSOSYSTEMPLUGIN_API UMidiPlayer : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void SetMidiFile(UMidiFile* MidiFileIn);
+	UMidiPlayer(const FObjectInitializer& ObjectInitializer);
+	void Initialize(UMusoData* const MusoData);
 
-	UFUNCTION(BlueprintCallable)
-	void SetTrackNumber(int32 TrackNumber);
-
-	UFUNCTION(BlueprintCallable)
 	void Play();
-
-	UFUNCTION(BlueprintCallable)
 	void Stop();
-
-	UFUNCTION(BlueprintCallable)
 	void Pause();
+	void UnPause();
+
+	float GetMsecToNextNoteOnEvent() const;
+	float GetMsecSincePreviousNoteOnEvent() const;
 	
-	UFUNCTION(BlueprintCallable)
-	int32 GetMsecToNextNoteOnEvent() const;
+	void SetDebugSounds(bool bDebugSoundsIn) { bDebugSounds = bDebugSoundsIn; }
 
-	UFUNCTION(BlueprintCallable)
-	int32 GetMsecSincePreviousNoteOnEvent() const;
-
-	UFUNCTION(BlueprintCallable)
-	EPlayerState GetPlayerState() const { return PlayerState; }
-
-	UFUNCTION(BlueprintCallable)
-	void SetLooping(bool bLoop) { bLooping = bLoop; }
-
-	UFUNCTION(BlueprintCallable)
-	bool IsLooping() const { return bLooping; }
-
-	UPROPERTY(BlueprintAssignable)
-	FOnNextMidiEvent OnNextMidiEvent;
+	FOnNextMidiEventFromMidiPlayer OnNextMidiEventFromMidiPlayer;
+	FOnPlayerStart OnPlayerStart;
+	
+	bool bLooping = false;
 
 private:
 	UPROPERTY()
@@ -81,22 +61,30 @@ private:
 
 	const UMidiFile::FMidiTrackList* MidiTrackList;
 	const FTempoMap* MidiTempoMap;
-
-	int32 TrackNumber = 0;
-	int32 NextEventIndex = 0;
+	const FMidiEventList* MidiEvents;
+	
+	int32 NextMidiTick = 0;
 	int32 LastMidiTick = -1;
-	double LastMidiEventMsec = 0;
-	double NextMidiEventMsec = 0;
-
-	EPlayerState PlayerState = EPlayerState::Stopped;
-	bool bLooping = false;
+	double LastMidiEventMsec = -1;
+	double NextMidiEventMsec = -1;
 	
 	FTimerHandle PlayerTimerHandle;
 
-	UFUNCTION()
-	void PlayerFunction();
+	void PlayerLoopFunction();
 
-	void BroadcastEvent(const FMidiEventList Events) const;
-	const FMidiTrack* GetTrack() const;
-	FMidiEventListWithExtra GetNextEvents();
+	void BroadcastEvent(const FMidiEventList& Events) const;
+	FMidiEventListWithExtra GetEventsAtTick(int32 Tick) const;
+	int32 GetNextTick() const;
+
+	UPROPERTY()
+	USoundWave* DebugSound = nullptr;
+
+	bool bDebugSounds = false;
+
+	// FTickableGameObject
+public:
+	virtual void Tick(float DeltaTime) override;
+	virtual bool IsTickable() const override;
+	virtual TStatId GetStatId() const override;
+	virtual bool IsTickableInEditor() const override { return false; };
 };

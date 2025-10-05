@@ -1,48 +1,39 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MusoData.h"
+#include "PlayerBase.h"
 
 #include "AudioPlayer.generated.h"
 
-USTRUCT(BlueprintType)
-struct FMusoAudioParam
+USTRUCT()
+struct MUSOSYSTEMPLUGIN_API FComponentToLoopMap
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, meta = (Required))
-	USoundWave* SoundWave = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	float Volume = 1.0f;
-
-	UPROPERTY(BlueprintReadWrite)
-	float Pitch = 1.0f;
-
-	UPROPERTY(BlueprintReadWrite)
-	FName name = FName::FName(NAME_None);
-};
-
-struct FComponentToLoopMap
-{
 	FMusoAudioParam	MusoAudioParam;
-	UAudioComponent* AudioComponent;
+	
+	UPROPERTY()
+	UAudioComponent* AudioComponent = nullptr;
 };
 
-UCLASS(Blueprintable)
-class MUSOSYSTEMPLUGIN_API UAudioPlayer :public UObject
+UCLASS()
+class MUSOSYSTEMPLUGIN_API UAudioPlayer : public UObject
 {
 	GENERATED_BODY()
-
-public:
-	using FComponentToLoopMapList = TArray<FComponentToLoopMap>;
 
 private:
-	FComponentToLoopMapList ComponentToLoopMapList;
+	UPROPERTY()
+	TArray<FComponentToLoopMap> ComponentToLoopMapList;
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void AddMusoAudioLoop(FMusoAudioParam AudioParam);
+	void Initialize(UMusoData* MusoData);
 
-	UFUNCTION(BlueprintCallable)
 	void Play();
+	void Stop();
+	void Pause();
+	void UnPause();
+	void FadeIn(float Length);
+	void FadeOut(float Length);
+	void SetVolume(float Volume);
 };

@@ -2,27 +2,54 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/EngineSubsystem.h"
-
-#include "MidiPlayer.h"
-#include "AudioPlayer.h"
+#include "MusoPlayer.h"
 
 #include "MusoSubsystem.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNextMidiEvent, const FMusoMidiEvent&, MusoMidiEvent);
 
-UCLASS(Blueprintable, meta = (DisplayName = "MusoSubsystem"))
+
+UCLASS()
 class MUSOSYSTEMPLUGIN_API UMusoSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
-	// Begin USubsystem
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-	// End USubsystem
 
-	UPROPERTY(BlueprintReadOnly, Category = "Systems")
-	UMidiPlayer* MidiPlayer;
+	UPROPERTY(BlueprintReadOnly, Category = "Muso Subsystem")
+	TArray<UMusoPlayer*> MusoPlayers;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Systems")
-	UAudioPlayer* AudioPlayer;
+	UFUNCTION(BlueprintCallable, Category = "Muso Subsystem")
+	void EnterMusoArea(UMusoData* MusoData);
+
+	UFUNCTION(BlueprintCallable, Category = "Muso Subsystem")
+	void RemoveFadeMusoPlayers();
+
+	UFUNCTION(BlueprintCallable, Category = "Muso Subsystem")
+	void Play();
+
+	UFUNCTION(BlueprintCallable, Category = "Muso Subsystem")
+	void Stop();
+
+	UFUNCTION(BlueprintCallable, Category = "Muso Subsystem")
+	void Pause();
+
+	UFUNCTION(BlueprintCallable, Category = "Muso Subsystem")
+	void FadeIn();
+	
+	UFUNCTION(BlueprintCallable, Category = "Muso Subsystem")
+	void FadeOut();
+
+	UFUNCTION(BlueprintCallable, Category = "Muso Player")
+	void SetDebugSounds(bool bDebugSoundsIn);
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnNextMidiEvent OnNextMidiEvent;
+
+	void OnNextMusoPlayerEvent(const FMusoMidiEvent& MusoMidiEvent) const;
+
+private:
+	void RemovePlayer(UMusoPlayer* Player);
 };
